@@ -48,7 +48,7 @@ def _deduplicated_output_path(target: Path, seen: set[str]) -> Path:
 
 class BatchProcessor(QThread):
     progress = Signal(int, int, str)
-    finished = Signal(str)
+    completed = Signal(str)
     error = Signal(str)
 
     def __init__(
@@ -197,4 +197,4 @@ class BatchProcessor(QThread):
 
         finally:
             elapsed = timer.elapsed() / 1000.0
-            self.finished.emit(f"Processing time: {elapsed:.2f} seconds")
+            self.completed.emit(f"Processing time: {elapsed:.2f} seconds")

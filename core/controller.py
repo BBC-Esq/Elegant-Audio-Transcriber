@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from PySide6.QtCore import QObject, Signal, Slot
+from PySide6.QtCore import QObject, Qt, Signal, Slot
 
 from config.manager import config_manager
 from core.models.manager import ModelManager
@@ -195,8 +195,11 @@ class TranscriberController(QObject):
             curate_enabled=bool(config_manager.get_value("curate_transcription", True)),
         )
         self._batch_processor.progress.connect(self._on_batch_progress)
-        self._batch_processor.finished.connect(self._on_batch_completed)
+        self._batch_processor.completed.connect(self._on_batch_completed)
         self._batch_processor.error.connect(self._on_batch_error)
+        self._batch_processor.finished.connect(
+            self._on_batch_thread_finished, Qt.QueuedConnection
+        )
         self._batch_processor.start()
 
     def stop_batch_processing(self) -> None:
@@ -212,8 +215,12 @@ class TranscriberController(QObject):
 
     @Slot(str)
     def _on_batch_completed(self, message: str) -> None:
-        self._batch_processor = None
         self.batch_completed.emit(message)
+
+    @Slot()
+    def _on_batch_thread_finished(self) -> None:
+        if self._batch_processor is not None and self._batch_processor.isFinished():
+            self._batch_processor = None
 
     @Slot(str)
     def _on_batch_error(self, message: str) -> None:
