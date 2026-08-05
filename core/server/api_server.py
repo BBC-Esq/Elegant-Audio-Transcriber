@@ -37,6 +37,12 @@ CANARY_MAX_CHUNK_LENGTH = 40
 MIN_SEGMENT_LENGTH = 10
 MAX_SEGMENT_LENGTH = 100
 
+# Matches the GUI spinbox and the config validator. An unclamped negative
+# value reaches _group_words_into_segments as max_duration and degenerates
+# the output into one segment per word.
+MIN_SEGMENT_DURATION = 1
+MAX_SEGMENT_DURATION = 90
+
 
 class AppState:
     model_manager: Any = None
@@ -486,11 +492,14 @@ def _build_settings(
     seg_len = segment_length or defaults.segment_length
     seg_len = max(MIN_SEGMENT_LENGTH, min(int(seg_len), MAX_SEGMENT_LENGTH))
 
+    seg_dur = segment_duration or defaults.segment_duration
+    seg_dur = max(MIN_SEGMENT_DURATION, min(int(seg_dur), MAX_SEGMENT_DURATION))
+
     settings = TranscriptionSettings(
         model_key=model_key,
         device=device or defaults.device,
         segment_length=seg_len,
-        segment_duration=segment_duration or defaults.segment_duration,
+        segment_duration=seg_dur,
         output_format=output_format or defaults.output_format,
         word_timestamps=word_timestamps if word_timestamps is not None else defaults.word_timestamps,
         recursive=False,
