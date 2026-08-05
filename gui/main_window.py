@@ -264,11 +264,6 @@ class MainWindow(QMainWindow):
     def _load_precision_support(self) -> None:
         try:
             self.supported_precisions = _detect_supported_precisions(self.cuda_available)
-            try:
-                config_manager.set_supported_precisions("cpu", self.supported_precisions.get("cpu", []))
-                config_manager.set_supported_precisions("cuda", self.supported_precisions.get("cuda", []))
-            except Exception as e:
-                logger.warning(f"Failed to persist precisions: {e}")
         except Exception as e:
             logger.error(f"Failed to load precision support: {e}")
             self.supported_precisions = {"cpu": ["float32"], "cuda": []}
@@ -392,8 +387,6 @@ class MainWindow(QMainWindow):
 
         try:
             config_manager.set_model_settings(model, precision, device)
-            config_manager.set_value("clipboard_append_mode", append_mode)
-            config_manager.set_value("show_clipboard_window", self._clipboard_visible)
         except Exception as e:
             logger.warning(f"Failed to sync config manager: {e}")
 
@@ -488,8 +481,6 @@ class MainWindow(QMainWindow):
         self.settings.setValue(SETTINGS_CLIPBOARD_ALWAYS_ON_TOP, value)
 
     def _setup_connections(self) -> None:
-        self.clipboard_window.append_mode_changed.connect(self._on_append_mode_changed)
-
         self.controller.update_button_signal.connect(self._on_button_text_update)
         self.controller.enable_widgets_signal.connect(self.set_widgets_enabled)
         self.controller.text_ready_signal.connect(self._on_transcription_ready)
@@ -877,16 +868,11 @@ class MainWindow(QMainWindow):
     def _on_clipboard_closed(self) -> None:
         self._clipboard_visible = False
         self._update_clipboard_button_text()
-        self._save_config("show_clipboard_window", False)
 
     @Slot()
     def _on_file_panel_closed(self) -> None:
         self._file_panel_visible = False
         self._update_file_panel_button_text()
-
-    @Slot(bool)
-    def _on_append_mode_changed(self, checked: bool) -> None:
-        self._save_config("clipboard_append_mode", checked)
 
     @Slot(str, str)
     def _show_error_dialog(self, title: str, message: str) -> None:
@@ -1136,7 +1122,6 @@ class MainWindow(QMainWindow):
     def _toggle_clipboard(self) -> None:
         self._clipboard_visible = not self._clipboard_visible
         self._update_clipboard_button_text()
-        self._save_config("show_clipboard_window", self._clipboard_visible)
 
         host_rect = self._host_rect_global()
         if self._clipboard_visible:
@@ -1310,7 +1295,6 @@ class MainWindow(QMainWindow):
             pass
 
         self._save_state()
-        self._save_config("show_clipboard_window", self._clipboard_visible)
         config_manager.flush_sync()
 
         self.clipboard_window.close()

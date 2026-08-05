@@ -21,30 +21,17 @@ class ConfigManager:
         "device_types": {"cpu", "cuda"},
         "precisions": {"float16", "float32", "bfloat16"},
         "output_formats": {"txt", "srt", "vtt", "json"},
-        "single_file_output_modes": {
-            "clipboard", "save_to_source", "save_and_clipboard", "save_to_custom"
-        },
     }
 
     DEFAULT_CONFIG = {
         "model_name": "Parakeet TDT 0.6B v2",
         "precision": "bfloat16",
         "device_type": "cuda",
-        "show_clipboard_window": False,
-        "supported_precisions": {"cpu": ["float32"], "cuda": ["bfloat16", "float16", "float32"]},
         "curate_transcription": True,
-        "clipboard_append_mode": False,
         "include_timestamps": False,
         "segment_length": 90,
         "segment_duration": 10,
         "output_format": "txt",
-        "single_file_output_mode": "clipboard",
-        "output_directory": "",
-        "batch_recursive": False,
-        "batch_extensions": [
-            ".aac", ".amr", ".asf", ".avi", ".flac", ".m4a",
-            ".mkv", ".mp3", ".mp4", ".wav", ".webm", ".wma",
-        ],
         "server_mode_enabled": False,
         "server_port": 8765,
     }
@@ -53,16 +40,11 @@ class ConfigManager:
         "model_name": {"type": str, "validator": "_validate_model_name"},
         "device_type": {"type": str, "options": "device_types", "lowercase": True},
         "precision": {"type": str, "options": "precisions"},
-        "show_clipboard_window": {"type": bool},
         "curate_transcription": {"type": bool},
-        "clipboard_append_mode": {"type": bool},
         "include_timestamps": {"type": bool},
         "segment_length": {"type": int, "validator": "_validate_segment_length"},
         "segment_duration": {"type": int, "validator": "_validate_segment_duration"},
         "output_format": {"type": str, "options": "output_formats"},
-        "single_file_output_mode": {"type": str, "options": "single_file_output_modes"},
-        "output_directory": {"type": str},
-        "batch_recursive": {"type": bool},
         "server_mode_enabled": {"type": bool},
         "server_port": {"type": int, "validator": "_validate_server_port"},
     }
@@ -202,23 +184,6 @@ class ConfigManager:
             if "validator" in schema:
                 config[key] = getattr(self, schema["validator"])(value)
 
-        self._validate_supported_precisions(config)
-
-    def _validate_supported_precisions(self, config: dict[str, Any]) -> None:
-        key = "supported_precisions"
-        if not isinstance(config.get(key), dict):
-            config[key] = copy.deepcopy(self.DEFAULT_CONFIG[key])
-            return
-
-        for device in self.VALID_OPTIONS["device_types"]:
-            if device not in config[key] or not isinstance(config[key][device], list):
-                config[key][device] = []
-            else:
-                config[key][device] = [
-                    p for p in config[key][device]
-                    if isinstance(p, str) and p in self.VALID_OPTIONS["precisions"]
-                ]
-
     def _save_to_disk(self, config: dict[str, Any]) -> None:
         try:
             self._config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -259,17 +224,6 @@ class ConfigManager:
             "precision": precision,
             "device_type": device_type,
         })
-
-    def get_supported_precisions(self) -> dict[str, list[str]]:
-        value = self.get_value("supported_precisions", {"cpu": [], "cuda": []})
-        return copy.deepcopy(value) if isinstance(value, dict) else {"cpu": [], "cuda": []}
-
-    def set_supported_precisions(self, device: str, precisions: list[str]) -> None:
-        if device not in self.VALID_OPTIONS["device_types"]:
-            return
-        current = self.get_supported_precisions()
-        current[device] = precisions
-        self.set_value("supported_precisions", current)
 
     def invalidate_cache(self) -> None:
         self._config_cache = None
