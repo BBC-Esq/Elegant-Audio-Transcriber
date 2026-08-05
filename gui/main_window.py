@@ -400,6 +400,7 @@ class MainWindow(QMainWindow):
         logger.info(f"State restored: model={model}, device={device}, precision={precision}")
 
         self._update_model_status("No model loaded")
+        self._is_loading_model = True
         self.controller.update_model(model, precision, device)
 
     def _save_state(self) -> None:
@@ -1099,14 +1100,15 @@ class MainWindow(QMainWindow):
         return (self.controller.is_transcribing()
                 or self.controller.is_batch_processing()
                 or self.controller.is_awaiting_recording_audio()
-                or self.is_recording)
+                or self.is_recording
+                or self._is_loading_model)
 
     def _warn_transcription_busy(self) -> None:
         QMessageBox.warning(
             self,
             "Operation in progress",
-            "A transcription or recording is already in progress.\n\n"
-            "Wait for it to finish before starting another one.",
+            "A transcription, recording, or model load is already in "
+            "progress.\n\nWait for it to finish before starting another one.",
         )
 
     def _transcribe_specific_file(self, file_path: str) -> None:
