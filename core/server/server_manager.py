@@ -134,6 +134,12 @@ class ServerManager(QObject):
             )
         except Exception as e:
             logger.error(f"Server thread error: {e}", exc_info=True)
+            # A failure before startup completes is reported by
+            # _check_startup, which detects the dead thread; reporting it
+            # here too would surface the same error twice. A failure after
+            # the server was serving has no other reporter.
+            if self._server is not None and getattr(self._server, "started", False):
+                self.server_error.emit(f"Server stopped unexpectedly: {e}")
 
     def stop_server(self) -> None:
         # Cancel any in-flight startup poll so a user-initiated stop during
