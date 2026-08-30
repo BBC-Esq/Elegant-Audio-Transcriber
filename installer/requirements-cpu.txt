@@ -1,28 +1,40 @@
 # Elegant Transcriber - CPU Requirements
 # Note: PyTorch and torchaudio are installed separately via wheel URL in setup-app.ps1
 # Note: NeMo is installed normally first, then version overrides applied with --no-deps
+#
+# Versions are pinned to the set this app is developed and tested against, so a
+# fresh install reproduces that environment instead of whatever PyPI serves that
+# day. Floating them has broken installs twice: numba backtracking to an
+# unbuildable sdist, and transformers raising its tokenizers floor.
+#
+# setup-app.ps1 then applies these on top with --no-deps. Keep the two in sync:
+#   transformers==5.5.4  huggingface-hub==1.11.0  fsspec==2024.12.0
+#   protobuf==6.33.6     datasets==4.8.4
 
 # NeMo toolkit (installs all transitive deps automatically)
-nemo_toolkit[asr]>=2.7.0,<2.8.0
+nemo_toolkit[asr]==2.7.2
 
-# Keep the resolver off numpy 2.5+: no numba wheel supports it yet, and an
-# unpinned resolve backtracks to numba 0.53.1, which only ships an sdist
-# whose build fails on Python 3.12 (numpy 2.5.1 + numba 0.53.1, July 2026).
+# No numba wheel supports numpy 2.5+, and an unpinned resolve backtracks to
+# numba 0.53.1, an sdist whose build fails on Python 3.12.
 numba==0.65.0
 llvmlite==0.47.0
-numpy<2.5
+numpy==2.4.4
+
+# Must stay inside the range the pinned transformers override accepts
+# (>=0.22.0,<=0.23.0), or model loading fails at launch.
+tokenizers==0.22.2
 
 # Canary-Qwen dependencies
-peft>=0.18.0
-soundfile
+peft==0.19.1
+soundfile==0.13.1
 
 # App-specific libraries
-av
-psutil
-PySide6
-sounddevice
-pynput
-nltk
-fastapi
-uvicorn[standard]
-python-multipart
+av==17.0.0
+psutil==7.2.2
+PySide6==6.11.0
+sounddevice==0.5.5
+pynput==1.8.1
+nltk==3.9.4
+fastapi==0.136.0
+uvicorn[standard]==0.44.0
+python-multipart==0.0.26
